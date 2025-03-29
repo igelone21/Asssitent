@@ -32,7 +32,7 @@ app.post("/chat", async (req, res) => {
 });
 
 // WICHTIG für Render → dynamischer Port
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Server läuft auf Port ${PORT}`);
 });
