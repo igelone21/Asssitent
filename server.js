@@ -15,36 +15,19 @@ app.post("/chat", async (req, res) => {
     const userMessage = req.body.message;
 
     // Thread erstellen
-    const thread = await openai.beta.threads.create();
-
-    // Nachricht anhängen
-    await openai.beta.threads.messages.create(thread.id, {
-      role: "user",
-      content: userMessage,
+    const thread = await openai.chat.completions.create({
+      model: 'gpt-4', // Beispiel für GPT-4. Du kannst auch ein anderes Modell wählen.
+      messages: [{ role: 'user', content: userMessage }],
     });
 
-    // Assistant starten
-    const run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: "asst_DEINE_ASSISTANT_ID", // <-- hier deine echte ID einfügen
-    });
-
-    // Auf Ergebnis warten
-    let result;
-    while (true) {
-      result = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-      if (result.status === "completed") break;
-      await new Promise(r => setTimeout(r, 1000));
-    }
-
-    // Antwort abrufen
-    const messages = await openai.beta.threads.messages.list(thread.id);
-    const reply = messages.data[0].content[0].text.value;
+    // Antwort zurückgeben
+    const reply = thread.choices[0].message.content;
 
     res.json({ reply });
 
   } catch (error) {
     console.error("Fehler:", error);
-    res.status(500).json({ error: "Es ist ein Fehler aufgetreten." });
+    res.status(500).json({ error: error.message || "Es ist ein Fehler aufgetreten." });
   }
 });
 
