@@ -1,24 +1,38 @@
 const express = require("express");
 const { OpenAI } = require("openai");
 const cors = require("cors");
-require("dotenv").config(); // Stellt sicher, dass Umgebungsvariablen geladen werden
+require("dotenv").config();
 
 const app = express();
-app.use(cors());
-app.use(express.json());  // Damit der JSON-Body verarbeitet wird
 
-// Überprüfung Route GET /
-app.get("/", (req, res) => {
-  res.send("Server läuft!");  // Diese Antwort sollte im Browser erscheinen
+// CORS mit Einschränkungen
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || '*'  // Beispiel: ALLOWED_ORIGINS="http://localhost:3000,https://deine-website.de"
+}));
+
+app.use(express.json());
+
+// OpenAI-Client initialisieren
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
 });
 
-// POST-Route für den Chat
+// Test-Route
+app.get("/", (req, res) => {
+  res.send("Server läuft!");
+});
+
+// Chat-Route mit Validierung
 app.post("/chat", async (req, res) => {
   const userMessage = req.body.message;
+  
+  if (!userMessage || typeof userMessage !== 'string') {
+    return res.status(400).json({ error: "Ungültige Nachricht." });
+  }
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',  // Beispielmodell
+      model: process.env.OPENAI_MODEL || 'gpt-4',
       messages: [{ role: 'user', content: userMessage }],
     });
 
@@ -27,12 +41,16 @@ app.post("/chat", async (req, res) => {
 
   } catch (error) {
     console.error("Fehler:", error);
-    res.status(500).json({ error: error.message || "Es ist ein Fehler aufgetreten." });
+    if (error.response?.status === 429) {
+      res.status(429).json({ error: "API-Limit erreicht. Bitte warten Sie." });
+    } else {
+      res.status(500).json({ error: error.message || "Interner Serverfehler." });
+    }
   }
 });
 
-// Dynamischer Port für Render
-const PORT = process.env.PORT || 10000;
+// Server starten
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server läuft auf Port ${PORT}`);
 });
