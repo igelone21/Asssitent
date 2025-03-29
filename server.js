@@ -7,22 +7,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// OpenAI initialisieren
+// OpenAI initialisieren (schließt den Schlüssel aus dem Render-Umgebungsvariablen ein)
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// POST-Route für den Chat
 app.post("/chat", async (req, res) => {
-  try {
-    const userMessage = req.body.message;
+  const userMessage = req.body.message;
 
-    // Thread erstellen
+  try {
+    // OpenAI Chat-API aufrufen
     const thread = await openai.chat.completions.create({
-      model: 'gpt-4', // Beispiel für GPT-4. Du kannst auch ein anderes Modell wählen.
+      model: 'gpt-4',  // Du kannst hier auch ein anderes Modell wählen
       messages: [{ role: 'user', content: userMessage }],
     });
 
-    // Antwort zurückgeben
+    // Antwort von OpenAI zurückgeben
     const reply = thread.choices[0].message.content;
-
     res.json({ reply });
 
   } catch (error) {
@@ -31,8 +31,8 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// WICHTIG für Render → dynamischer Port
-const PORT = process.env.PORT || 10000;
+// Dynamischer Port für Render
+const PORT = process.env.PORT || 10000;  // Standardport auf 10000, falls Render nicht konfiguriert ist
 app.listen(PORT, () => {
   console.log(`Server läuft auf Port ${PORT}`);
 });
