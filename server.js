@@ -1,28 +1,30 @@
 const express = require("express");
 const { OpenAI } = require("openai");
 const cors = require("cors");
-require("dotenv").config();
+require("dotenv").config();  // Damit Umgebungsvariablen geladen werden
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// OpenAI initialisieren (schließt den Schlüssel aus dem Render-Umgebungsvariablen ein)
+// Middleware
+app.use(cors());  // CORS erlauben
+app.use(express.json());  // JSON im Request-Body erlauben
+
+// OpenAI initialisieren
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// POST-Route für den Chat
+// POST Route für den Chat
 app.post("/chat", async (req, res) => {
   const userMessage = req.body.message;
 
   try {
-    // OpenAI Chat-API aufrufen
-    const thread = await openai.chat.completions.create({
-      model: 'gpt-4',  // Du kannst hier auch ein anderes Modell wählen
+    // Chat-Komplettierung an OpenAI
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',  // Beispielmodell, du kannst auch ein anderes Modell wählen
       messages: [{ role: 'user', content: userMessage }],
     });
 
-    // Antwort von OpenAI zurückgeben
-    const reply = thread.choices[0].message.content;
+    // Antwort zurückgeben
+    const reply = response.choices[0].message.content;
     res.json({ reply });
 
   } catch (error) {
@@ -31,8 +33,8 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// Dynamischer Port für Render
-const PORT = process.env.PORT || 10000;  // Standardport auf 10000, falls Render nicht konfiguriert ist
+// Dynamischer Port, um auf Render zu funktionieren
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Server läuft auf Port ${PORT}`);
 });
