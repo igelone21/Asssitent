@@ -1,63 +1,50 @@
-const express = require("express");
-const { OpenAI } = require("openai");
-const cors = require("cors");
-require("dotenv").config();
+const express = require('express');
+const { OpenAI } = require('openai');
+const cors = require('cors');
 
 const app = express();
 
-// Vereinfachte CORS für Testzwecke
+// Middleware zuerst!
 app.use(cors());
-
 app.use(express.json());
 
-// OpenAI-Client mit Fehlerbehandlung
-let openai;
-try {
-  openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-  });
-} catch (error) {
-  console.error("OpenAI Initialization Error:", error);
-  process.exit(1);
-}
-
-// Test-Route
-app.get("/", (req, res) => {
-  res.send("Server läuft! Version 1.0");
-});
-
-// Chat-Route mit erweiterter Logging
-app.post("/chat", async (req, res) => {
-  console.log("Received request body:", req.body);
+// Explizite Route-Registrierung vor dem Listen
+app.post('/chat', async (req, res) => {
+  console.log('POST /chat reached'); // WICHTIG für Debugging
   
-  if (!req.body || !req.body.message) {
-    return res.status(400).json({ error: "Nachricht fehlt im Request-Body" });
+  if (!req.body?.message) {
+    return res.status(400).json({ error: 'Message is required' });
   }
 
-  const userMessage = req.body.message;
-  
   try {
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+    
     const response = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo', // günstiger für Tests
-      messages: [{ role: 'user', content: userMessage }],
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: req.body.message }],
     });
-
-    const reply = response.choices[0].message.content;
-    console.log("Successful response:", reply);
-    res.json({ reply });
-
+    
+    return res.json({ reply: response.choices[0].message.content });
   } catch (error) {
-    console.error("API Error:", error);
-    res.status(500).json({ 
-      error: "Serverfehler",
-      details: error.message 
-    });
+    console.error('OpenAI Error:', error);
+    return res.status(500).json({ error: 'AI Service Error' });
   }
 });
 
-// Server mit Port 10000 für Render
+// GET-Route
+app.get('/', (req, res) => {
+  res.send('Server läuft! Final Version');
+});
+
+// Error Handling
+app.use((req, res) => {
+  res.status(404).send('Route not found');
+});
+
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`Server läuft auf Port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`✅ Server running on ${PORT}`);
+  console.log(`➡️ Test with: curl -X POST http://localhost:${PORT}/chat -H "Content-Type: application/json" -d '{"message":"Hi"}'`);
 });
