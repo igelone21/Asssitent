@@ -6,15 +6,17 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Middleware
-app.use(cors());
+// CORS-Konfiguration
+app.use(cors({
+  origin: '*', // Erlaube alle Domains (für Entwicklung)
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type']
+}));
+
 app.use(express.json());
 
-// Optional: Request-Logger (zum Debuggen)
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
-  next();
-});
+// Debug: zeigt ob der Code wirklich deployed ist
+console.log("✅ Server-Code geladen");
 
 // OpenAI-Initialisierung
 const openai = new OpenAI({
@@ -37,12 +39,12 @@ app.post('/chat', async (req, res) => {
 
     res.json({ reply: response.choices[0].message.content });
   } catch (error) {
-    console.error('Fehler bei der OpenAI-Anfrage:', error);
+    console.error("Fehler bei der OpenAI-Anfrage:", error.response?.data || error.message || error);
     res.status(500).json({ error: 'API-Fehler' });
   }
 });
 
-// Fallback-Route für 404
+// Fallback für alle anderen Routen
 app.use((req, res) => {
   res.status(404).json({ error: 'Route nicht gefunden' });
 });
