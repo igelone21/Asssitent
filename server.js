@@ -8,14 +8,18 @@ const PORT = process.env.PORT || 10000;
 
 // CORS-Konfiguration
 app.use(cors({
-  origin: '*', // Erlaube alle Domains (für Entwicklung)
+  origin: '*',
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type']
 }));
 
+// Wichtig: explizit OPTIONS-Preflight beantworten
+app.options('/chat', (req, res) => {
+  res.sendStatus(200);
+});
+
 app.use(express.json());
 
-// Debug: zeigt ob der Code wirklich deployed ist
 console.log("✅ Server-Code geladen");
 
 // OpenAI-Initialisierung
